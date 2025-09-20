@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="utf-8">
+    <title>快速估值試算</title>
+    <style>
+        body { font-family: "Segoe UI", "Microsoft JhengHei", sans-serif; margin: 20px; color: #333; }
+        h1 { color: #1a5d87; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: right; }
+        th { background-color: #f2f7fb; }
+        td.label, th.label { text-align: left; }
+        .form-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+        .form-row label { display: flex; flex-direction: column; font-size: 14px; }
+        input[type="number"], input[type="text"], select { padding: 4px; min-width: 80px; }
+        fieldset { border: 1px solid #ccc; padding: 10px; margin-bottom: 20px; }
+        legend { padding: 0 6px; }
+        .error { color: #c0392b; background: #f9e0df; padding: 10px; margin-bottom: 20px; border-radius: 4px; }
+        .status-badge { padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+        .status-actual { background-color: #27ae60; color: #fff; }
+        .status-estimated { background-color: #f1c40f; color: #000; }
+        button { padding: 8px 16px; background-color: #1a5d87; border: none; color: #fff; cursor: pointer; border-radius: 4px; }
+        button:hover { background-color: #124366; }
+    </style>
+</head>
+<body>
+    <h1>快速估值試算</h1>
+    {{if .Error}}
+    <div class="error">{{.Error}}</div>
+    {{end}}
+    <form method="get">
+        <div class="form-row">
+            <label>
+                股票代號
+                <input type="text" name="stock_no" value="{{.StockNo}}">
+            </label>
+            <label>
+                年份
+                <select name="year">
+                    {{range .AvailableYears}}
+                    <option value="{{.}}" {{if eq . $.Year}}selected{{end}}>{{.}}</option>
+                    {{end}}
+                </select>
+            </label>
+        </div>
+        <fieldset>
+            <legend>基本假設 (可依個人評估調整)</legend>
+            <div class="form-row">
+                <label>毛利率 (%)<input type="number" step="0.01" name="gross_margin" value="{{.Form.GrossMargin}}"></label>
+                <label>營業費用<input type="number" step="0.01" name="operating_expense" value="{{.Form.OperatingExpense}}"></label>
+                <label>業外收入<input type="number" step="0.01" name="non_operating_income" value="{{.Form.NonOperatingIncome}}"></label>
+                <label>稅率 (%)<input type="number" step="0.01" name="tax_rate" value="{{.Form.TaxRate}}"></label>
+                <label>股本 (百萬股)<input type="number" step="0.01" name="shares" value="{{.Form.Shares}}"></label>
+                <label>上一季 EPS<input type="number" step="0.01" name="prev_eps" value="{{.Form.PrevQuarterEPS}}"></label>
+                <label>本益比倍數<input type="number" step="0.01" name="per" value="{{.Form.PerMultiple}}"></label>
+                <label>現價<input type="number" step="0.01" name="current_price" value="{{.Form.CurrentPrice}}"></label>
+            </div>
+        </fieldset>
+        <h2>營收年增率假設</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th class="label">月份</th>
+                    <th>去年同期營收</th>
+                    <th>今年營收</th>
+                    <th>年增率 (%)</th>
+                    <th>資料狀態</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Months}}
+                <tr>
+                    <td class="label">{{.Label}}</td>
+                    <td>{{printf "%.0f" .PreviousRevenue}}</td>
+                    <td>{{printf "%.0f" .Revenue}}</td>
+                    <td>
+                        {{if .Editable}}
+                        <input type="number" step="0.01" name="{{.InputName}}" value="{{.InputValue}}">
+                        {{else}}
+                        {{printf "%.2f" .YoYPercent}}
+                        {{end}}
+                    </td>
+                    <td>
+                        {{if .IsActual}}
+                        <span class="status-badge status-actual">實際</span>
+                        {{else}}
+                        <span class="status-badge status-estimated">預估</span>
+                        {{end}}
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+        <button type="submit">重新計算</button>
+    </form>
+
+    {{if .Projection}}
+    <h2>季別盈餘試算</h2>
+    <table>
+        <thead>
+            <tr>
+                <th class="label">季度</th>
+                <th>營收</th>
+                <th>毛利</th>
+                <th>營業利益</th>
+                <th>稅前淨利</th>
+                <th>稅後淨利</th>
+                <th>EPS</th>
+                <th>狀態</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Quarters}}
+            <tr>
+                <td class="label">第{{.Quarter}}季</td>
+                <td>{{printf "%.2f" .Revenue}}</td>
+                <td>{{printf "%.2f" .GrossProfit}}</td>
+                <td>{{printf "%.2f" .OperatingIncome}}</td>
+                <td>{{printf "%.2f" .PreTaxIncome}}</td>
+                <td>{{printf "%.2f" .NetIncome}}</td>
+                <td>{{printf "%.2f" .EPS}}</td>
+                <td>
+                    {{if .IsActual}}
+                    <span class="status-badge status-actual">實際</span>
+                    {{else}}
+                    <span class="status-badge status-estimated">預估</span>
+                    {{end}}
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+
+    <h2>年度摘要</h2>
+    <ul>
+        <li>全年營收：{{printf "%.2f" .Summary.AnnualRevenue}}</li>
+        <li>全年 EPS：{{printf "%.2f" .Summary.AnnualEPS}}</li>
+        <li>估算目標價：{{printf "%.2f" .Summary.EstimatedPrice}}</li>
+        <li>現價：{{.Form.CurrentPrice}}</li>
+        <li>操作空間：{{printf "%.2f" .Summary.UpsidePercent}}%</li>
+        <li>平均年增率：{{printf "%.2f" .Summary.AvgYoYPercent}}%</li>
+    </ul>
+    {{end}}
+</body>
+</html>

@@ -1,28 +1,71 @@
-# stock_auto_work
 
-使用 Go 建立的快速估值試算網站。輸入股票代號後，系統會呼叫臺灣證交所公開資料的上市公司月營收 API，自動整理近兩年數據、計算年增率，並依據使用者提供的毛利率、營業費用、稅率等假設推估季度 EPS 與年度估價。
+# KHAM Ticket Bot
 
-## 功能總覽
+此專案提供一個以 Python 標準函式庫建構的指令工具，用來協助與寬宏售票網頁（`UTK0101_03.aspx`）互動。功能重點如下：
 
-- 擷取上市公司月營收，支援民國與西元年月格式解析。
-- 依照已公布月份計算年增率，未公布月份可套用平均年增率或自行輸入。
-- 依照輸入的毛利率、費用與稅率假設計算每季毛利、營業利益、稅後淨利與 EPS。
-- 根據年度 EPS 與自訂本益比估計合理價格，顯示與現價的操作空間。
+- 解析頁面中的 HTML 表單並自動帶入欄位值。
+- 使用 `urllib` 與 CookieJar 維持會話並執行登入流程。
+- 透過 JSON 設定檔描述搶票流程（抓頁、送出表單、輪詢等待關鍵字）。
+- 提供命令列工具：`login`、`dump-forms`、`run`，方便檢視表單與執行設定流程。
 
-## 執行方式
+## 環境需求
+
+- Python 3.11（本專案僅使用標準函式庫，無需安裝額外套件）。
+
+## 安裝與測試
 
 ```bash
-# 下載相依套件並執行單元測試
-go test ./...
-
-# 啟動網站，預設監聽 http://localhost:8080
-go run ./cmd/server
+python -m unittest discover -s tests
 ```
 
-啟動後輸入股票代號 (例如 2330) 與假設條件，即可於瀏覽器查看營收推估與估值結果。
+所有測試均為離線模擬，確保表單解析、登入流程及 CLI 邏輯皆能正常運作。
 
-## 資料來源
+## 使用方式
 
-- 臺灣證券交易所公開資料平台：上市公司每月營收 (t187ap03_L)
+### 1. 查看表單結構
 
-> 測試環境中會以模擬伺服器取代遠端服務，實際部署時請確認執行環境能存取公開資料 API。
+```bash
+python -m ticketbot.cli dump-forms --url https://kham.com.tw/application/utk01/UTK0101_03.aspx
+```
+
+會列出頁面上偵測到的所有表單、欄位名稱與預設值，協助了解要覆寫的欄位。
+
+### 2. 嘗試登入
+
+```bash
+python -m ticketbot.cli login \
+  --account L125097509 \
+  --password Aa@@850302 \
+  --extra __EVENTTARGET= __EVENTARGUMENT= ctl00$ContentPlaceHolder1$btnLogin=登入
+```
+
+> 注意：目前環境對外網路受限，登入實際會連線失敗。若在有網路的環境執行，請確保帳密安全並遵守網站使用條款。
+
+### 3. 依設定檔自動執行
+
+先複製範例設定檔再依需求調整（例如覆寫欄位、輪詢條件）：
+
+```bash
+cp config.example.json my_config.json
+```
+
+將 `my_config.json` 中的 `${KHAM_ACCOUNT}`、`${KHAM_PASSWORD}` 改為環境變數或直接填寫帳密（建議使用環境變數）。接著執行：
+
+```bash
+export KHAM_ACCOUNT=L125097509
+export KHAM_PASSWORD=Aa@@850302
+python -m ticketbot.cli run --config my_config.json
+```
+
+`steps` 內的每個動作會依序執行：
+
+- `type: "fetch"` 代表單純抓取頁面。
+- `type: "submit"` 會自動從頁面挑選符合條件的表單並送出。`overrides` 可指定要覆寫的欄位值。
+- `polling` 可設定輪詢頁面直到 HTML 內容出現指定關鍵字（例如座位開放）。
+
+## 注意事項
+
+- 由於評測環境無法連線外部網路，無法實際驗證登入或購票流程；程式碼透過單元測試模擬 HTTP 回應來驗證邏輯。
+- 搶票時請留意網站之服務條款與使用規範，避免違反相關規定。
+- 若頁面表單欄位調整，可透過 `dump-forms` 重新檢視欄位並更新設定檔。
+

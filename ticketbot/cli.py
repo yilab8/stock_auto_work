@@ -11,14 +11,22 @@ from typing import Dict, Iterable, List, Optional
 from .client import KhamTicketClient
 from .form_parser import FormDetails, FormParser
 
+DEFAULT_BASE_URL = "https://kham.com.tw/application/utk01/UTK0101_03.aspx"
+DEFAULT_TIMEOUT = 15.0
+
 
 def _add_common_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--base-url",
-        default="https://kham.com.tw/application/utk01/UTK0101_03.aspx",
+        default=DEFAULT_BASE_URL,
         help="Base URL of the ticketing page.",
     )
-    parser.add_argument("--timeout", type=float, default=15.0, help="Request timeout in seconds.")
+    parser.add_argument(
+        "--timeout",
+        type=float,
+        default=DEFAULT_TIMEOUT,
+        help="Request timeout in seconds.",
+    )
 
 
 def _parse_key_value_pairs(pairs: Iterable[str]) -> Dict[str, str]:

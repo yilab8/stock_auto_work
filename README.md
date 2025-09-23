@@ -7,12 +7,23 @@
 - 使用 `urllib` 與 CookieJar 維持會話並執行登入流程。
 - 透過 JSON 設定檔描述搶票流程（抓頁、送出表單、輪詢等待關鍵字）。
 - 提供命令列工具：`login`、`dump-forms`、`run`，方便檢視表單與執行設定流程。
+- 內建 Tkinter 圖形介面，讓常用操作可以透過按鈕完成。
 
 ## 環境需求
 
 - Python 3.11（本專案僅使用標準函式庫，無需安裝額外套件）。
 
 ## 安裝與測試
+
+使用 `pip` 安裝後會自動註冊 `ticketbot` 與 `ticketbot-gui` 指令，方便在正式環境中直接呼叫 CLI 或桌面版工具：
+
+```bash
+pip install .
+ticketbot --help
+ticketbot-gui
+```
+
+若要確認功能或在開發階段進行驗證，可執行隨附的單元測試：
 
 ```bash
 python -m unittest discover -s tests
@@ -25,7 +36,7 @@ python -m unittest discover -s tests
 ### 1. 查看表單結構
 
 ```bash
-python -m ticketbot.cli dump-forms --url https://kham.com.tw/application/utk01/UTK0101_03.aspx
+ticketbot dump-forms --url https://kham.com.tw/application/utk01/UTK0101_03.aspx
 ```
 
 會列出頁面上偵測到的所有表單、欄位名稱與預設值，協助了解要覆寫的欄位。
@@ -33,7 +44,7 @@ python -m ticketbot.cli dump-forms --url https://kham.com.tw/application/utk01/U
 ### 2. 嘗試登入
 
 ```bash
-python -m ticketbot.cli login \
+ticketbot login \
   --account L125097509 \
   --password Aa@@850302 \
   --extra __EVENTTARGET= __EVENTARGUMENT= ctl00$ContentPlaceHolder1$btnLogin=登入
@@ -54,7 +65,7 @@ cp config.example.json my_config.json
 ```bash
 export KHAM_ACCOUNT=L125097509
 export KHAM_PASSWORD=Aa@@850302
-python -m ticketbot.cli run --config my_config.json
+ticketbot run --config my_config.json
 ```
 
 `steps` 內的每個動作會依序執行：
@@ -62,6 +73,16 @@ python -m ticketbot.cli run --config my_config.json
 - `type: "fetch"` 代表單純抓取頁面。
 - `type: "submit"` 會自動從頁面挑選符合條件的表單並送出。`overrides` 可指定要覆寫的欄位值。
 - `polling` 可設定輪詢頁面直到 HTML 內容出現指定關鍵字（例如座位開放）。
+
+### 4. 使用圖形介面快速操作
+
+除了命令列工具外，也可以啟動 Tkinter 製作的圖形介面。安裝完成後執行：
+
+```bash
+ticketbot-gui
+```
+
+會開啟一個視窗，提供登入、擷取表單與執行設定檔的按鈕與輸入欄位。所有輸出會顯示在視窗下方的輸出區域，方便直接點選操作。
 
 ## 注意事項
 

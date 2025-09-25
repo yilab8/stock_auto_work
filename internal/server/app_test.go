@@ -9,17 +9,26 @@ import (
 	"strings"
 	"testing"
 	"time"
-
+	"github.com/yilab8/stock_auto_work/internal/financials"
 	"github.com/yilab8/stock_auto_work/internal/revenue"
 )
 
 type stubFetcher struct {
-	records []revenue.MonthlyRevenue
-	err     error
+	result revenue.FetchResult
+	err    error
 }
 
-func (s *stubFetcher) Fetch(ctx context.Context, stockNo string) ([]revenue.MonthlyRevenue, error) {
-	return s.records, s.err
+func (s *stubFetcher) Fetch(ctx context.Context, stockNo string) (revenue.FetchResult, error) {
+	return s.result, s.err
+}
+
+type stubEarnings struct {
+	result financials.FetchResult
+	err    error
+}
+
+func (s *stubEarnings) Fetch(ctx context.Context, stockNo string) (financials.FetchResult, error) {
+	return s.result, s.err
 }
 
 func TestParseYoYInputs(t *testing.T) {
@@ -47,8 +56,16 @@ func TestAppServeHTTP(t *testing.T) {
 	}
 	records = append(records, revenue.MonthlyRevenue{Year: 2024, Month: time.January, Revenue: 388})
 
-	tmpl := template.Must(template.New("test").Parse(`{{(index .Months 0).Label}}|{{printf "%.0f" (index .Months 1).Revenue}}|{{printf "%.2f" .Summary.AnnualEPS}}`))
-	app := NewApp(&stubFetcher{records: records}, tmpl)
+	earnings := financials.FetchResult{
+		Records: []financials.QuarterlyReport{{Year: 2023, Quarter: 4, NetIncome: 1000, BasicEPS: 2.5}},
+		Source:  financials.SourceFallback,
+	}
+	tmpl := template.Must(template.New("test").Parse(`{{(index .Months 0).Label}}|{{printf "%.0f" (index .Months 1).Revenue}}|{{printf "%.2f" (index .Months 1).MoMPercent}}|{{.EPSReference}}|{{len .Earnings}}`))
+	app := NewApp(
+		&stubFetcher{result: revenue.FetchResult{Records: records, Source: revenue.SourceFallback}},
+		&stubEarnings{result: earnings},
+		tmpl,
+	)
 	app.now = func() time.Time { return time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC) }
 
 	req := httptest.NewRequest(http.MethodGet, "/?stock_no=2330&yoy_02=10", nil)
@@ -65,4 +82,8 @@ func TestAppServeHTTP(t *testing.T) {
 	if !strings.Contains(body, "308") {
 		t.Fatalf("manual yoy not applied: %s", body)
 	}
+	if !strings.Contains(body, "2.50") {
+		t.Fatalf("missing eps reference: %s", body)
+	}
+
 }

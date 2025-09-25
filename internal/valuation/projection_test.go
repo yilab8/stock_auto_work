@@ -27,6 +27,9 @@ func TestBuildYearProjection(t *testing.T) {
 		SharesOutstanding:  80,
 		PerMultiple:        23,
 		CurrentPrice:       56,
+		ActualQuarters: map[int]QuarterActual{
+			1: {NetIncome: 1000, EPS: 1.25},
+		},
 	}
 	projection, err := BuildYearProjection(2024, grouped, manual, asm)
 	if err != nil {
@@ -43,6 +46,10 @@ func TestBuildYearProjection(t *testing.T) {
 	if math.Abs(jan.YoY-expectedJanYoY) > 1e-6 {
 		t.Fatalf("unexpected Jan YoY: %f", jan.YoY)
 	}
+	if jan.PreviousMonthRevenue != 410 {
+		t.Fatalf("unexpected Jan previous month revenue: %f", jan.PreviousMonthRevenue)
+	}
+
 	mar := projection.Months[2]
 	if mar.IsActual {
 		t.Fatalf("March should be estimated")
@@ -50,17 +57,23 @@ func TestBuildYearProjection(t *testing.T) {
 	if math.Abs(mar.Revenue-352.0) > 1e-6 {
 		t.Fatalf("unexpected March revenue: %f", mar.Revenue)
 	}
+	if !mar.HasReference || mar.ReferenceRevenue <= 0 {
+		t.Fatalf("expected reference data for March")
+	}
+
 	q1 := projection.Quarters[0]
 	if q1.Quarter != 1 {
 		t.Fatalf("unexpected quarter number: %d", q1.Quarter)
 	}
-	expectedQ1Revenue := 388.0 + 388.0 + 352.0
-	if math.Abs(q1.Revenue-expectedQ1Revenue) > 1e-6 {
-		t.Fatalf("unexpected Q1 revenue: %f", q1.Revenue)
+	if !q1.IsActual {
+		t.Fatalf("expected Q1 marked as actual")
 	}
-	expectedQ1EPS := ((expectedQ1Revenue*0.173 - 38.0) + 38.0) * (1 - 0.2) / 80.0
-	if math.Abs(q1.EPS-expectedQ1EPS) > 1e-6 {
-		t.Fatalf("unexpected Q1 EPS: %f", q1.EPS)
+	if math.Abs(q1.NetIncome-1000.0) > 1e-6 {
+		t.Fatalf("unexpected Q1 net income override: %f", q1.NetIncome)
+	}
+	if math.Abs(q1.EPS-1.25) > 1e-6 {
+		t.Fatalf("unexpected Q1 EPS override: %f", q1.EPS)
+
 	}
 	if projection.EstimatedPrice <= 0 {
 		t.Fatalf("expected positive estimated price")
@@ -68,6 +81,9 @@ func TestBuildYearProjection(t *testing.T) {
 	if projection.AvgYoY <= 0 {
 		t.Fatalf("expected positive avg YoY")
 	}
+	if projection.AvgMoM >= 0 {
+		t.Fatalf("expected negative avg MoM due to下降")
+
 }
 
 func TestBuildYearProjectionSharesError(t *testing.T) {

@@ -4,27 +4,82 @@
     <meta charset="utf-8">
     <title>快速估值試算</title>
     <style>
-        body { font-family: "Segoe UI", "Microsoft JhengHei", sans-serif; margin: 20px; color: #333; }
-        h1 { color: #1a5d87; }
+        body { font-family: "Segoe UI", "Microsoft JhengHei", sans-serif; margin: 20px; color: #333; background-color: #f7f9fc; }
+        h1 { color: #1a5d87; margin-bottom: 10px; }
+
         table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: right; }
         th { background-color: #f2f7fb; }
         td.label, th.label { text-align: left; }
         .form-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
         .form-row label { display: flex; flex-direction: column; font-size: 14px; }
-        input[type="number"], input[type="text"], select { padding: 4px; min-width: 80px; }
-        fieldset { border: 1px solid #ccc; padding: 10px; margin-bottom: 20px; }
+        input[type="number"], input[type="text"], select { padding: 6px; min-width: 100px; border: 1px solid #c5d2de; border-radius: 4px; }
+        input[list] { min-width: 160px; }
+        fieldset { border: 1px solid #ccd7e2; padding: 12px; margin-bottom: 20px; background: #fff; border-radius: 6px; }
         legend { padding: 0 6px; }
-        .error { color: #c0392b; background: #f9e0df; padding: 10px; margin-bottom: 20px; border-radius: 4px; }
+        .error { color: #c0392b; background: #f9e0df; padding: 10px; margin-bottom: 20px; border-radius: 6px; }
+        .info-box { background: #eaf4ff; border: 1px solid #bcd8ff; padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; }
+        .info-box strong { color: #1a5d87; }
+        .note { font-size: 13px; color: #4b6275; margin-top: 4px; }
+        .card { background: #fff; border: 1px solid #d6e2f1; border-radius: 6px; padding: 14px; margin-bottom: 20px; box-shadow: 0 1px 2px rgba(18, 52, 86, 0.05); }
+        .card h2 { margin-top: 0; color: #1a5d87; }
+        .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px 16px; margin: 0; padding: 0; }
+        .meta-grid dt { font-weight: 600; color: #1a5d87; }
+        .meta-grid dd { margin: 0; font-size: 14px; }
+        .form-note { font-size: 13px; color: #4b6275; margin-bottom: 8px; }
         .status-badge { padding: 2px 6px; border-radius: 4px; font-size: 12px; }
         .status-actual { background-color: #27ae60; color: #fff; }
         .status-estimated { background-color: #f1c40f; color: #000; }
-        button { padding: 8px 16px; background-color: #1a5d87; border: none; color: #fff; cursor: pointer; border-radius: 4px; }
+        button { padding: 10px 20px; background-color: #1a5d87; border: none; color: #fff; cursor: pointer; border-radius: 4px; }
         button:hover { background-color: #124366; }
+        a { color: #1a5d87; }
+        .input-with-button { display: flex; gap: 6px; align-items: center; }
+        .input-with-button button { padding: 6px 12px; }
+
     </style>
 </head>
 <body>
     <h1>快速估值試算</h1>
+    <p class="note">輸入股票代號後即可載入內建示例或即時資料，並調整假設觀察各月營收年、月增率與估值。</p>
+    {{if .DataSource}}
+    <div class="info-box">
+        <strong>資料來源：</strong>{{.DataSource}}
+        {{if .DataNote}}<div class="note">{{.DataNote}}</div>{{end}}
+    </div>
+    {{end}}
+    {{if .EarningsSource}}
+    <div class="info-box">
+        <strong>檢表資料：</strong>{{.EarningsSource}}
+        {{if .EarningsNote}}<div class="note">{{.EarningsNote}}</div>{{end}}
+    </div>
+    {{end}}
+    {{if .Company}}
+    <div class="card">
+        <h2>公司概要</h2>
+        <dl class="meta-grid">
+            <div>
+                <dt>公司</dt>
+                <dd>{{.Company.Name}} ({{.Company.StockNo}})</dd>
+            </div>
+            {{if .Company.Industry}}
+            <div>
+                <dt>產業</dt>
+                <dd>{{.Company.Industry}}</dd>
+            </div>
+            {{end}}
+            {{if .Company.Website}}
+            <div>
+                <dt>官方網站</dt>
+                <dd><a href="{{.Company.Website}}" target="_blank" rel="noopener">{{.Company.Website}}</a></dd>
+            </div>
+            {{end}}
+        </dl>
+        {{if .Company.Description}}
+        <p class="note">{{.Company.Description}}</p>
+        {{end}}
+    </div>
+    {{end}}
+
     {{if .Error}}
     <div class="error">{{.Error}}</div>
     {{end}}
@@ -32,7 +87,12 @@
         <div class="form-row">
             <label>
                 股票代號
-                <input type="text" name="stock_no" value="{{.StockNo}}">
+                <input type="text" name="stock_no" value="{{.StockNo}}" list="stock-options" placeholder="輸入或選擇代號">
+                <datalist id="stock-options">
+                    {{range .StockOptions}}
+                    <option value="{{.Code}}">{{.Label}}</option>
+                    {{end}}
+                </datalist>
             </label>
             <label>
                 年份
@@ -45,13 +105,24 @@
         </div>
         <fieldset>
             <legend>基本假設 (可依個人評估調整)</legend>
+            <div class="form-note">金額預設使用「新台幣千元」，股本以「百萬股」為單位，請依實際狀況調整。</div>
+
             <div class="form-row">
                 <label>毛利率 (%)<input type="number" step="0.01" name="gross_margin" value="{{.Form.GrossMargin}}"></label>
                 <label>營業費用<input type="number" step="0.01" name="operating_expense" value="{{.Form.OperatingExpense}}"></label>
                 <label>業外收入<input type="number" step="0.01" name="non_operating_income" value="{{.Form.NonOperatingIncome}}"></label>
                 <label>稅率 (%)<input type="number" step="0.01" name="tax_rate" value="{{.Form.TaxRate}}"></label>
                 <label>股本 (百萬股)<input type="number" step="0.01" name="shares" value="{{.Form.Shares}}"></label>
-                <label>上一季 EPS<input type="number" step="0.01" name="prev_eps" value="{{.Form.PrevQuarterEPS}}"></label>
+                <label>上一季 EPS
+                    <div class="input-with-button">
+                        <input id="prev-eps" type="number" step="0.01" name="prev_eps" value="{{.Form.PrevQuarterEPS}}">
+                        {{if .EPSReference}}
+                        <button type="button" class="apply-eps" data-target="prev-eps" data-value="{{.EPSReference}}"{{if .EPSReferenceLabel}} data-label="{{.EPSReferenceLabel}}"{{end}}>套用參考</button>
+                        {{end}}
+                    </div>
+                    {{if .EPSReferenceLabel}}<div class="note">參考來源：{{.EPSReferenceLabel}}</div>{{end}}
+                </label>
+
                 <label>本益比倍數<input type="number" step="0.01" name="per" value="{{.Form.PerMultiple}}"></label>
                 <label>現價<input type="number" step="0.01" name="current_price" value="{{.Form.CurrentPrice}}"></label>
             </div>
@@ -62,8 +133,11 @@
                 <tr>
                     <th class="label">月份</th>
                     <th>去年同期營收</th>
+                    <th>上月營收</th>
                     <th>今年營收</th>
                     <th>年增率 (%)</th>
+                    <th>月增率 (%)</th>
+                    <th>參考資訊</th>
                     <th>資料狀態</th>
                 </tr>
             </thead>
@@ -72,12 +146,28 @@
                 <tr>
                     <td class="label">{{.Label}}</td>
                     <td>{{printf "%.0f" .PreviousRevenue}}</td>
+                    <td>{{printf "%.0f" .PreviousMonthRevenue}}</td>
                     <td>{{printf "%.0f" .Revenue}}</td>
                     <td>
                         {{if .Editable}}
-                        <input type="number" step="0.01" name="{{.InputName}}" value="{{.InputValue}}">
+                        <div class="input-with-button">
+                            <input id="{{.InputID}}" type="number" step="0.01" name="{{.InputName}}" value="{{.InputValue}}">
+                            {{if .HasReference}}
+                            <button type="button" class="apply-ref" data-target="{{.InputID}}" data-value="{{printf "%.2f" .ReferenceYoYPercent}}">套用參考</button>
+                            {{end}}
+                        </div>
                         {{else}}
                         {{printf "%.2f" .YoYPercent}}
+                        {{end}}
+                    </td>
+                    <td>{{printf "%.2f" .MoMPercent}}</td>
+                    <td class="label">
+                        {{if .HasReference}}
+                        <div class="note">參考年增率：{{printf "%.2f" .ReferenceYoYPercent}}%</div>
+                        <div class="note">參考月增率：{{printf "%.2f" .ReferenceMoMPercent}}%</div>
+                        <div class="note">參考營收：約 {{printf "%.0f" .ReferenceRevenue}}</div>
+                        {{else}}
+                        <div class="note">暫無參考資料</div>
                         {{end}}
                     </td>
                     <td>
@@ -139,7 +229,63 @@
         <li>現價：{{.Form.CurrentPrice}}</li>
         <li>操作空間：{{printf "%.2f" .Summary.UpsidePercent}}%</li>
         <li>平均年增率：{{printf "%.2f" .Summary.AvgYoYPercent}}%</li>
+        <li>平均月增率：{{printf "%.2f" .Summary.AvgMoMPercent}}%</li>
     </ul>
+    {{if .Earnings}}
+    <div class="card">
+        <h2>歷史稅後淨利 (檢表)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th class="label">期間</th>
+                    <th>稅後淨利</th>
+                    <th>基本每股盈餘</th>
+                    <th>狀態</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Earnings}}
+                <tr>
+                    <td class="label">{{.Label}}</td>
+                    <td>{{printf "%.0f" .NetIncome}}</td>
+                    <td>{{printf "%.2f" .EPS}}</td>
+                    <td>
+                        {{if .IsCurrentYear}}
+                        <span class="status-badge status-actual">當年度</span>
+                        {{else}}
+                        <span class="status-badge">歷史</span>
+                        {{end}}
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
     {{end}}
+    {{end}}
+
+    <script>
+        document.querySelectorAll('.apply-ref').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var target = document.getElementById(btn.dataset.target);
+                if (target && btn.dataset.value) {
+                    target.value = btn.dataset.value;
+                    target.dispatchEvent(new Event('change'));
+                }
+            });
+        });
+        document.querySelectorAll('.apply-eps').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var target = document.getElementById(btn.dataset.target);
+                if (target && btn.dataset.value) {
+                    target.value = btn.dataset.value;
+                    target.dispatchEvent(new Event('change'));
+                    if (btn.dataset.label) {
+                        btn.textContent = '已套用 ' + btn.dataset.label;
+                    }
+                }
+            });
+        });
+    </script>
 </body>
 </html>

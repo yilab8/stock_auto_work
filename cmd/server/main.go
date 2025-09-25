@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/yilab8/stock_auto_work/internal/financials"
 	"github.com/yilab8/stock_auto_work/internal/revenue"
 	"github.com/yilab8/stock_auto_work/internal/server"
 )
@@ -19,8 +20,7 @@ func main() {
 		log.Fatalf("載入樣板失敗: %v", err)
 	}
 
-	app := server.NewApp(&revenue.Service{}, tmpl)
-
+	app := server.NewApp(&revenue.Service{}, &financials.Service{}, tmpl)
 	log.Printf("服務啟動於 %s", *addr)
 	if err := http.ListenAndServe(*addr, app); err != nil {
 		log.Fatalf("服務停止: %v", err)

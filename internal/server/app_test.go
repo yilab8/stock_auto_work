@@ -9,7 +9,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
 	"github.com/yilab8/stock_auto_work/internal/financials"
 	"github.com/yilab8/stock_auto_work/internal/revenue"
 )
@@ -86,4 +85,5 @@ func TestAppServeHTTP(t *testing.T) {
 	if !strings.Contains(body, "2.50") {
 		t.Fatalf("missing eps reference: %s", body)
 	}
+
 }

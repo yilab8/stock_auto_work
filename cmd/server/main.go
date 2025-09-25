@@ -21,7 +21,6 @@ func main() {
 	}
 
 	app := server.NewApp(&revenue.Service{}, &financials.Service{}, tmpl)
-
 	log.Printf("服務啟動於 %s", *addr)
 	if err := http.ListenAndServe(*addr, app); err != nil {
 		log.Fatalf("服務停止: %v", err)

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/yilab8/stock_auto_work/internal/financials"
+
 	"github.com/yilab8/stock_auto_work/internal/revenue"
 	"github.com/yilab8/stock_auto_work/internal/valuation"
 )
@@ -24,12 +25,14 @@ type RevenueFetcher interface {
 // EarningsFetcher 抽象化檢表稅後淨利資料來源。
 type EarningsFetcher interface {
 	Fetch(ctx context.Context, stockNo string) (financials.FetchResult, error)
+
 }
 
 // App 提供網站主要服務。
 type App struct {
 	Fetcher  RevenueFetcher
 	Earnings EarningsFetcher
+
 	Template *template.Template
 	now      func() time.Time
 }
@@ -39,6 +42,7 @@ func NewApp(fetcher RevenueFetcher, earnings EarningsFetcher, tmpl *template.Tem
 	return &App{
 		Fetcher:  fetcher,
 		Earnings: earnings,
+
 		Template: tmpl,
 		now:      time.Now,
 	}
@@ -64,6 +68,7 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Form:         form,
 		Company:      toCompanyView(baseCompany),
 		StockOptions: buildStockOptions(),
+
 	}
 
 	if a.Fetcher == nil {
@@ -103,6 +108,7 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	grouped := revenue.GroupByYear(result.Records)
+
 	years := make([]int, 0, len(grouped))
 	for y := range grouped {
 		years = append(years, y)
@@ -139,6 +145,7 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	assumptions := form.toAssumptions()
 	assumptions.ActualQuarters = actualQuarters
 	projection, err := valuation.BuildYearProjection(activeYear, grouped, manualYoY, assumptions)
+
 	if err != nil {
 		data.Error = err.Error()
 		a.render(w, data)
@@ -191,6 +198,7 @@ type companyView struct {
 	Industry    string
 	Website     string
 	Description string
+
 }
 
 type formValues struct {
@@ -214,6 +222,7 @@ func buildForm(values url.Values, company *revenue.StaticCompany) formValues {
 		PrevQuarterEPS:     pickValue(values, "prev_eps", companyDefault(company, "prev_eps"), "0.8"),
 		PerMultiple:        pickValue(values, "per", companyDefault(company, "per"), "23"),
 		CurrentPrice:       pickValue(values, "current_price", companyDefault(company, "current_price"), "56"),
+
 	}
 }
 
@@ -256,6 +265,7 @@ type monthView struct {
 	ReferenceMoMPercent  float64
 	ReferenceRevenue     float64
 	HasReference         bool
+
 }
 
 type quarterView struct {

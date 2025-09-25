@@ -29,6 +29,7 @@ type FetchResult struct {
 	Note    string
 }
 
+
 // Service 封裝對官方 API 的存取邏輯。
 type Service struct {
 	Client   *http.Client
@@ -103,6 +104,7 @@ func (s *Service) Fetch(ctx context.Context, stockNo string) (FetchResult, error
 			}, nil
 		}
 		return FetchResult{}, ErrNoData
+
 	}
 	normalized := make([]MonthlyRevenue, 0, len(filtered))
 	for _, rec := range filtered {
@@ -122,4 +124,5 @@ func (s *Service) Fetch(ctx context.Context, stockNo string) (FetchResult, error
 		Company: company,
 		Note:    note,
 	}, nil
+
 }

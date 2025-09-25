@@ -49,6 +49,7 @@ func TestBuildYearProjection(t *testing.T) {
 	if jan.PreviousMonthRevenue != 410 {
 		t.Fatalf("unexpected Jan previous month revenue: %f", jan.PreviousMonthRevenue)
 	}
+
 	mar := projection.Months[2]
 	if mar.IsActual {
 		t.Fatalf("March should be estimated")
@@ -59,6 +60,7 @@ func TestBuildYearProjection(t *testing.T) {
 	if !mar.HasReference || mar.ReferenceRevenue <= 0 {
 		t.Fatalf("expected reference data for March")
 	}
+
 	q1 := projection.Quarters[0]
 	if q1.Quarter != 1 {
 		t.Fatalf("unexpected quarter number: %d", q1.Quarter)
@@ -71,6 +73,7 @@ func TestBuildYearProjection(t *testing.T) {
 	}
 	if math.Abs(q1.EPS-1.25) > 1e-6 {
 		t.Fatalf("unexpected Q1 EPS override: %f", q1.EPS)
+
 	}
 	if projection.EstimatedPrice <= 0 {
 		t.Fatalf("expected positive estimated price")
@@ -80,7 +83,7 @@ func TestBuildYearProjection(t *testing.T) {
 	}
 	if projection.AvgMoM >= 0 {
 		t.Fatalf("expected negative avg MoM due to下降")
-	}
+
 }
 
 func TestBuildYearProjectionSharesError(t *testing.T) {

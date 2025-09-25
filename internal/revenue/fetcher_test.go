@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+
 	"testing"
 )
 
@@ -37,6 +38,7 @@ func TestServiceFetch(t *testing.T) {
 	}
 	if result.Company == nil {
 		t.Fatalf("expected company metadata")
+
 	}
 }
 
@@ -60,6 +62,7 @@ func TestServiceFetchStatusError(t *testing.T) {
 	}
 	if !strings.Contains(result.Note, "狀態碼") {
 		t.Fatalf("expected note to mention status code: %s", result.Note)
+
 	}
 }
 
@@ -72,6 +75,7 @@ func TestServiceFetchNoData(t *testing.T) {
 
 	svc := &Service{Endpoint: server.URL}
 	_, err := svc.Fetch(context.Background(), "9999")
+
 	if !errors.Is(err, ErrNoData) {
 		t.Fatalf("expected ErrNoData, got %v", err)
 	}
@@ -96,3 +100,4 @@ func TestServiceFetchFallbackWhenNoRecords(t *testing.T) {
 		t.Fatalf("expected fallback records")
 	}
 }
+

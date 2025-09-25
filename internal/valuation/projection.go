@@ -22,6 +22,7 @@ type MonthEstimate struct {
 	ReferenceRevenue     float64
 	HasReference         bool
 	IsActual             bool
+
 }
 
 // QuarterInputs 為單季計算 EPS 所需的基本假設。
@@ -89,6 +90,7 @@ type YearProjection struct {
 func BuildYearProjection(year int, grouped map[int][]revenue.MonthlyRevenue, manualYoY map[time.Month]float64, asm Assumptions) (YearProjection, error) {
 	current := revenue.SortMonthlyRevenues(grouped[year])
 	previous := revenue.SortMonthlyRevenues(grouped[year-1])
+
 	if len(current) == 0 {
 		return YearProjection{}, fmt.Errorf("缺少 %d 年的營收資料", year)
 	}
@@ -149,6 +151,7 @@ func BuildYearProjection(year int, grouped map[int][]revenue.MonthlyRevenue, man
 		momSum += mom
 		momCount++
 	}
+
 	avgYoY := 0.0
 	if yoyCount > 0 {
 		avgYoY = yoySum / float64(yoyCount)

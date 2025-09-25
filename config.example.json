@@ -1,0 +1,36 @@
+{
+  "base_url": "https://kham.com.tw/application/utk01/UTK0101_03.aspx",
+  "login": {
+    "account": "${KHAM_ACCOUNT}",
+    "password": "${KHAM_PASSWORD}",
+    "extra_overrides": {
+      "__EVENTTARGET": "",
+      "__EVENTARGUMENT": "",
+      "ctl00$ContentPlaceHolder1$btnLogin": "登入"
+    }
+  },
+  "steps": [
+    {
+      "type": "fetch",
+      "url": "https://kham.com.tw/application/utk01/UTK0101_03.aspx"
+    },
+    {
+      "type": "submit",
+      "use_last_page": true,
+      "form": {
+        "action_contains": "UTK0101",
+        "required_fields": ["__EVENTTARGET"]
+      },
+      "overrides": {
+        "__EVENTTARGET": "",
+        "ctl00$ContentPlaceHolder1$rptShow$ctl00$btnSeat": "立即購票"
+      }
+    }
+  ],
+  "polling": {
+    "url": "https://kham.com.tw/application/utk01/UTK0101_03.aspx",
+    "keyword": "座位",
+    "interval": 0.5,
+    "max_attempts": 40
+  }
+}
